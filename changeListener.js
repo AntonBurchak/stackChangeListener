@@ -1,54 +1,87 @@
-
-
-Array.prototype.push = function (el) {
-
-    if (this.setListener === 'push') {
-        this[this.length] = this.callback(el) || el;
-    } else {
-        this[this.length] = el;
+// jshint esversion:6
+class Stack {
+    constructor() {
+        this._data = Array.from(arguments) || [];
+        this._size = Array.from(arguments).length;
+        this._setTypes = [];
+        this.change = {
+            target: this._data
+        };
     }
-    return this;
-};
 
-Array.prototype.setListener = function (changeType) {
-    this.addChangeListener(changeType);
-};
+    push(el) {
+        let setTypes = this._setTypes, data = this._data;
+        this.change.type = 'push';
 
-Array.prototype.print = function() {
-    for (let i = 0; i < this.length; i++) {
-        console.log(this[i]);
+        if (setTypes.length) {
+            setTypes.forEach(element => {
+                if (element[0] === 'push') {
+                    data[data.length] = element[1](el, this.change) || el;
+                } else {
+                    data[data.length] = el;
+                }
+            });
+        } else {
+            data[data.length] = el;
+        }
+        this._size += 1;
+
+        return data;
+    }
+
+    pop() {
+        let setTypes = this._setTypes, data = this._data, tmp = [];
+        this.change.type = 'pop';
+
+        if (data.length >= 1) {
+    
+            for (let i = 0; i < data.length - 1; i++) {
+                tmp[tmp.length] = data[i];
+            }
+           
+            data = this._data = tmp;
         
+            if (setTypes.length) {
+                setTypes.forEach(element => {
+                    if (element[0] === 'pop') {
+                        element[1](data[data.length - 1], this.change);
+                    }
+                });
+            }
+            this._size -= 1;
+            this.change.target = this._data;
+        }
+        else {
+            throw new Error(`Stack is empty: remove is not a possible`);
+        }
+
+        return data;
     }
-};
 
-Array.prototype.addChangeListener = function (changeType, callback) {
-    this.setListener = changeType;
-    this.callback = callback;
-};
+    addChangeListener(changeType, callback) {
+        this._setTypes[this._setTypes.length] = [changeType, callback];
+    
+        this.setListeners = changeType;
+        this.callback = callback;
+    }
 
-let arr = [1, 2, 3];
-arr.addChangeListener('push', function (el) {console.log(`Вы изменили ${this} добавив элемент ${el}`)});
-arr.push(44);
+    removeChangeListener(changeType) {
+        this._setTypes = this._setTypes.filter(el => el[0] != changeType);
+    }
+}
+
+let a = new Stack();
+let b = new Stack(1,2,3,4);
+
+a.addChangeListener('push', (el, change) => console.log(el));
+b.addChangeListener('pop', (el, change) => el);
+
+a.push(1);
+a.push(2);
+a.push(3);
+
+a.removeChangeListener('push');
+a.push(4);
 
 
-arr.push(12);
-arr.push(5);
 
-
-arr.push(5);
-arr.push(5);
-
-
-
-
-// arr.print(1);
-
-
-
-arr.print();
-
-// arr.print();
-
-// function addChangeListener() {
-//     return console.log(this, arguments[0]);
-// } 
